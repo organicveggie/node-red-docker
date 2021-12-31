@@ -36,9 +36,9 @@ fi
 # Update ownership of dirs we need to write
 if [ "${CHANGE_CONFIG_DIR_OWNERSHIP,,}" = "true" ]; then
     echo Updating ownership for /usr/src/node-red
-    /usr/bin/find /usr/src/node-red \! \( -uid $(id -u node-red) -gid $(id -g node-red) \) -print0 | xargs -0 chown -h node-red:node-red
+    /usr/bin/find /usr/src/node-red \! \( -uid $(id -u node-red) -gid $(id -g node-red) \) -print0 | xargs -0r chown -h node-red:node-red
     echo Updating ownership for /data
-    /usr/bin/find /data \! \( -uid $(id -u node-red) -gid $(id -g node-red) \) -print0 | xargs -0 chown -h node-red:node-red
+    /usr/bin/find /data \! \( -uid $(id -u node-red) -gid $(id -g node-red) \) -print0 | xargs -0r chown -h node-red:node-red
 fi
 
 touch /.firstRunComplete
