@@ -1,0 +1,5 @@
+#!/usr/bin/with-contenv bash
+
+echo "Starting Node-Red"
+cd /usr/src/node-red
+exec s6-setuidgid node-red npm start --cache /data/.npm -- --userDir /data

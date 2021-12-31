@@ -5,11 +5,14 @@ ARG OS=buster-slim
 #### Stage BASE ########################################################################################################
 FROM ${ARCH}/node:${NODE_VERSION}-${OS} AS base
 
+ARG S6_OVERLAY_VERSION=v2.2.0.3
+ARG S6_OVERLAY_ARCH=amd64
+
 # Copy scripts
 COPY scripts/*.sh /tmp/
 
-# Install tools, create Node-RED app and data dir, add user and set rights
 RUN set -ex && \
+    # Update and install dependencies
     apt-get update && apt-get install -y \
         bash \
         ca-certificates \
@@ -20,6 +23,11 @@ RUN set -ex && \
         openssh-client \
         tzdata \
         wget && \
+    # Fetch and extract S6 overlay
+    curl -J -L -o /tmp/s6-overlay-installer https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${S6_OVERLAY_ARCH}-installer && \
+    chmod +x /tmp/s6-overlay-installer && \
+    /tmp/s6-overlay-installer / && \
+    # Setup user and folders
     mkdir -p /usr/src/node-red /data && \
     deluser --remove-home node && \
     useradd --home-dir /usr/src/node-red --uid 1000 node-red && \
@@ -54,8 +62,10 @@ ARG BUILD_REF
 ARG NODE_RED_VERSION
 ARG ARCH
 ARG TAG_SUFFIX=default
+ARG MAINTAINER="organicveggie"
 
-LABEL org.label-schema.build-date=${BUILD_DATE} \
+LABEL maintainer=${MAINTAINER} \
+    org.label-schema.build-date=${BUILD_DATE} \
     org.label-schema.docker.dockerfile=".docker/Dockerfile.debian" \
     org.label-schema.license="Apache-2.0" \
     org.label-schema.name="Node-RED" \
@@ -75,17 +85,16 @@ RUN chown -R node-red:node-red /usr/src/node-red && \
     apt-get update && apt-get install -y build-essential python-dev python3 && \
     rm -r /tmp/*
 
-# add local release files
-COPY release/ /
+COPY root/ /
 
 # Env variables
 ENV NODE_RED_VERSION=$NODE_RED_VERSION \
     NODE_PATH=/usr/src/node-red/node_modules:/data/node_modules \
     PATH=/usr/src/node-red/node_modules/.bin:${PATH} \
-    FLOWS=flows.json
-
-ENV NRUID=1000 \
-    NRGID=1000
+    FLOWS=flows.json \
+    NODERED_UID=1000 \
+    NODERED_GID=1000 \
+    CHANGE_CONFIG_DIR_OWNERSHIP="true"
 
 # ENV NODE_RED_ENABLE_SAFE_MODE=true    # Uncomment to enable safe start mode (flows not running)
 # ENV NODE_RED_ENABLE_PROJECTS=true     # Uncomment to enable projects option
@@ -99,4 +108,4 @@ VOLUME /data
 # Add a healthcheck (default every 30 secs)
 # HEALTHCHECK CMD curl http://localhost:1880/ || exit 1
 
-ENTRYPOINT /usr/bin/node-red.sh
+ENTRYPOINT ["/init"]
